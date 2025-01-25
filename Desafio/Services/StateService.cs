@@ -86,6 +86,8 @@ public static class StateService
 
     private static void RemoveConnection(Guid id)
     {
+        Connections[id].Connection.Close();
+        
         if (Connections.Remove(id))
         {
             TurnOrder.Remove(id);
