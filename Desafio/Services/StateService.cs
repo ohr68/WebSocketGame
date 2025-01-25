@@ -20,14 +20,7 @@ public static class StateService
     private static int _currentTurnIndex = 0;
 
     public static bool AddConnection(IWebSocketConnection connection)
-    {
-        var added = Connections.TryAdd(connection.ConnectionInfo.Id, new WebSocketWithMetaData(connection));
-
-        if (added)
-            TurnOrder.Add(connection.ConnectionInfo.Id);
-
-        return added;
-    }
+        => Connections.TryAdd(connection.ConnectionInfo.Id, new WebSocketWithMetaData(connection));
 
     public static void Broadcast(ServerBroadcastsMessageWithUsername message)
     {
@@ -36,17 +29,17 @@ public static class StateService
     }
 
     public static void SignIn(IWebSocketConnection connection, ClientWantsToSignInDto clientWantsToSignInDto)
-        => Connections[connection.ConnectionInfo.Id].Username = clientWantsToSignInDto.Username!;
+    {
+        Connections[connection.ConnectionInfo.Id].Username = clientWantsToSignInDto.Username!;
+        TurnOrder.Add(connection.ConnectionInfo.Id);
+    }
 
     public static string GetConnectionUsername(Guid connectionId)
         => Connections[connectionId].Username!;
 
-    public static bool IsCurrentTurn(Guid connectionId)
-        => TurnOrder.Count > 0 && TurnOrder[_currentTurnIndex] == connectionId;
-
     public static void ProcessTurn(Guid connectionId)
     {
-        if (Connections.Count <= 1)
+        if (Connections.Count(c => !string.IsNullOrEmpty(c.Value.Username)) <= 1)
         {
             Connections[connectionId].Connection
                 .Send(JsonSerializer.Serialize(
@@ -57,7 +50,7 @@ public static class StateService
         if (!IsCurrentTurn(connectionId))
         {
             Connections[connectionId].Connection
-                .Send(JsonSerializer.Serialize(new ClientErrorDto("Não é o seu turno.")));
+                .Send(JsonSerializer.Serialize(new NotYourTurnDto()));
             return;
         }
 
@@ -65,16 +58,19 @@ public static class StateService
         Connections[connectionId].TotalTime += TimeToClick.Elapsed;
 
         var successMessage = GetCurrentStatus();
-        Connections[connectionId].Connection.Send(JsonSerializer.Serialize(successMessage));
+
+        NotifyEveryone(JsonSerializer.Serialize(successMessage));
 
         if (Connections[connectionId].TotalTime >= TimeSpan.FromSeconds(30))
         {
             Connections[connectionId].Connection.Send(JsonSerializer.Serialize(new ClientReachedMaxTimeDto()));
             RemoveConnection(connectionId);
 
-            if (Connections.Count == 1)
+            if (Connections.Count(c => !string.IsNullOrEmpty(c.Value.Username)) == 1)
             {
-                Connections.FirstOrDefault().Value.Connection.Send(JsonSerializer.Serialize(new ClientWonDto()));
+                Connections.FirstOrDefault(c => !string.IsNullOrEmpty(c.Value.Username)).Value.Connection
+                    .Send(JsonSerializer.Serialize(new ClientWonDto()));
+                
                 return;
             }
         }
@@ -84,10 +80,13 @@ public static class StateService
         NextTurn();
     }
 
+    private static bool IsCurrentTurn(Guid connectionId)
+        => TurnOrder.Count > 0 && TurnOrder[_currentTurnIndex] == connectionId;
+
     private static void RemoveConnection(Guid id)
     {
         Connections[id].Connection.Close();
-        
+
         if (Connections.Remove(id))
         {
             TurnOrder.Remove(id);
@@ -104,12 +103,24 @@ public static class StateService
         _currentTurnIndex = (_currentTurnIndex + 1) % TurnOrder.Count;
 
         var currentPlayerId = TurnOrder[_currentTurnIndex];
-        Connections[currentPlayerId].Connection
-            .Send(JsonSerializer.Serialize(new ClientTurnStartedDto(currentPlayerId.ToString())));
+
+        NotifyEveryone(JsonSerializer.Serialize(new ClientTurnStartedDto(currentPlayerId.ToString(),
+            Connections[currentPlayerId].Username!)));
+
         TimeToClick.Start();
     }
 
     private static ClientCurrentStatusDto GetCurrentStatus()
-        => new ClientCurrentStatusDto(Connections.Select(c =>
-            new PlayerStatus(c.Key.ToString(), c.Value.Username!, c.Value.TotalTime.ToString())));
+        => new ClientCurrentStatusDto(Connections.Where(c => !string.IsNullOrEmpty(c.Value.Username))
+            .Select(c => new PlayerStatus(c.Key.ToString(), c.Value.Username!, c.Value.TotalTime.ToString())));
+
+
+    private static void NotifyEveryone(string message)
+    {
+        foreach (var connection in Connections.Where(c => !string.IsNullOrEmpty(c.Value.Username)))
+        {
+            connection.Value.Connection
+                .Send(message);
+        }
+    }
 }

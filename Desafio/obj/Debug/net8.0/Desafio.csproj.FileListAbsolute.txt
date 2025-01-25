@@ -35,3 +35,4 @@ C:\Users\Otavio\RiderProjects\Desafio\Desafio\obj\Debug\net8.0\refint\Desafio.dl
 C:\Users\Otavio\RiderProjects\Desafio\Desafio\obj\Debug\net8.0\Desafio.pdb
 C:\Users\Otavio\RiderProjects\Desafio\Desafio\obj\Debug\net8.0\Desafio.genruntimeconfig.cache
 C:\Users\Otavio\RiderProjects\Desafio\Desafio\obj\Debug\net8.0\ref\Desafio.dll
+C:\Users\Otavio\RiderProjects\Desafio\Desafio\obj\Debug\net8.0\Desafio.sourcelink.json

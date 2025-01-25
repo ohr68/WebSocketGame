@@ -8,33 +8,36 @@ namespace Desafio.Events;
 
 public class ClientWantsToSignInDto : BaseDto
 {
-    [JsonPropertyName("username")]
-    public string? Username { get; set; }
+    [JsonPropertyName("username")] public string? Username { get; set; }
 }
 
 public class ClientWantsToSignIn : BaseEventHandler<ClientWantsToSignInDto>
 {
     public override Task Handle(ClientWantsToSignInDto dto, IWebSocketConnection socket)
     {
+        if (string.IsNullOrWhiteSpace(dto.Username))
+        {
+            socket.Send(JsonSerializer.Serialize(new ClientErrorDto("Informe um usuário para prosseguir")));
+            return Task.CompletedTask;
+        }
+
         StateService.SignIn(socket, dto);
-        
+
         var echo = new ClientSignedIn()
         {
             Message = $"Welcome {dto.Username}",
             UserName = dto.Username
         };
-        
+
         socket.Send(JsonSerializer.Serialize(echo));
-        
+
         return Task.CompletedTask;
     }
 }
 
 public class ClientSignedIn : BaseDto
 {
-    [JsonPropertyName("message")]
-    public string? Message { get; set; }
-    
-    [JsonPropertyName("username")]
-    public string? UserName { get; set; }
+    [JsonPropertyName("message")] public string? Message { get; set; }
+
+    [JsonPropertyName("username")] public string? UserName { get; set; }
 }

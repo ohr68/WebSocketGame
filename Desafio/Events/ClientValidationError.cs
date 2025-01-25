@@ -27,8 +27,15 @@ public class ClientWonDto : BaseDto
     public string? Message { get; set; } = "Parabéns, você venceu!";
 }
 
+public class NotYourTurnDto : BaseDto
+{
+    [JsonPropertyName("message")] 
+    public string? Message { get; set; } = "Não é o seu turno.";
+}
+
 public class ClientCurrentStatusDto(IEnumerable<PlayerStatus> playersStatus) : BaseDto
 {
+    [JsonPropertyName("playersStatus")]
     public IEnumerable<PlayerStatus> PlayersStatus { get; set; } = playersStatus;
 }
 

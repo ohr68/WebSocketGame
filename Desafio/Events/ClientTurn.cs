@@ -31,8 +31,11 @@ public class ClientTurn : BaseEventHandler<ClientTurnDto>
     }
 }
 
-public class ClientTurnStartedDto(string playerId) : BaseDto
+public class ClientTurnStartedDto(string playerId, string username) : BaseDto
 {
     [JsonPropertyName("playerId")] 
     public string? PlayerId { get; set; } = playerId;
+    
+    [JsonPropertyName("username")]
+    public string? Username { get; set; } = username;
 }

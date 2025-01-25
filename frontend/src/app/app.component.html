@@ -1,0 +1,29 @@
+<div class="hero bg-base-200 min-h-screen" *ngIf="!isAuthenticated">
+  <div class="hero-content flex-col lg:flex-row-reverse">
+    <div class="text-center lg:text-left">
+      <h1 class="text-5xl font-bold">Login now!</h1>
+      <p class="py-6 flex">
+        And start playing!
+      </p>
+    </div>
+    <div class="card bg-base-100 w-full max-w-sm shrink-0 shadow-2xl">
+      <form class="card-body">
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Username</span>
+          </label>
+          <input type="text" placeholder="username" class="input input-bordered" [formControl]="username" />
+        </div>
+        <div class="form-control mt-6">
+          <button type="button" class="btn btn-primary" (click)="signIn()">Sign In</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<div class="flex w-full p-6" *ngIf="isAuthenticated">
+  <game class="flex w-full" [currentUser]="username.value!"></game>
+</div>
+
